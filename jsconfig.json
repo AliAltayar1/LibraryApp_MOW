@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@/ui/*": ["./src/components/ui/*"],
+      "@/shared/*": ["./src/components/shared/*"],
+      "@/layout/*": ["./src/components/layout/*"],
+      "@/books/*": ["./src/components/books/*"],
+      "@/home/*": ["./src/components/home/*"],
+      "@/profile/*": ["./src/components/profile/*"],
+      "@/favorites/*": ["./src/components/favorites/*"],
+      "@/dashboard/*": ["./src/components/dashboard/*"]
+    },
+    "jsx": "preserve"
+  },
+  "include": ["src/**/*"]
+}
