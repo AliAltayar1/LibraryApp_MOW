@@ -43,9 +43,9 @@ export function Header() {
               <span className="text-white/80">وزارة الأوقاف</span>
             </div>
             <div className="flex items-center gap-4 text-white/70">
-              <span className="hover:text-white transition-colors">البوابة الرقمية الموحدة</span>
-              <span className="text-secondary text-[10px]">●</span>
-              <span>نسخة تجريبية معتمدة</span>
+              <span className="hover:text-white transition-colors">
+                البوابة الرقمية الموحدة
+              </span>
             </div>
           </Container>
         </div>
@@ -77,7 +77,7 @@ export function Header() {
                       "relative px-4 py-2 text-xs sm:text-sm font-semibold rounded-full transition-all duration-200",
                       isActive
                         ? "bg-primary text-white shadow-subtle"
-                        : "text-foreground-muted hover:text-foreground hover:bg-surface/70"
+                        : "text-foreground-muted hover:text-foreground hover:bg-surface/70",
                     )}
                   >
                     <span>{link.name}</span>
@@ -87,7 +87,7 @@ export function Header() {
                           "ms-2 inline-flex items-center justify-center text-[10px] font-bold px-1.5 py-0.2 rounded-full",
                           isActive
                             ? "bg-white/20 text-white"
-                            : "bg-secondary-50 text-secondary-hover border border-secondary/20"
+                            : "bg-secondary-50 text-secondary-hover border border-secondary/20",
                         )}
                       >
                         {formatArabicNumber(favoritesCount)}

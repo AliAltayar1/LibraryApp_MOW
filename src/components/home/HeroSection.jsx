@@ -37,8 +37,6 @@ export function HeroSection() {
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-surface border border-secondary/30 shadow-subtle mb-6 text-xs font-semibold text-secondary-hover">
           <ShieldCheck className="w-4 h-4 text-secondary" />
           <span>المنصة الرقمية المعتمدة لوزارة الأوقاف</span>
-          <span className="w-1 h-1 rounded-full bg-secondary" />
-          <span className="text-foreground-muted font-normal">إصدار تجريبي</span>
         </div>
 
         {/* Hero Headline */}
@@ -48,8 +46,9 @@ export function HeroSection() {
 
         {/* Supporting Paragraph */}
         <p className="text-base sm:text-lg text-foreground-muted max-w-2xl mx-auto leading-relaxed mb-10">
-          بوابة شاملة تتيح للباحثين والمطالعين استكشاف وتصفح نفائس التراث الإسلامي،
-          والدراسات الفقهية والتاريخية، والمخطوطات الوقفية المحفوظة في خزانة وزارة الأوقاف السورية.
+          بوابة شاملة تتيح للباحثين والمطالعين استكشاف وتصفح نفائس التراث
+          الإسلامي، والدراسات الفقهية والتاريخية، والمخطوطات الوقفية المحفوظة في
+          خزانة وزارة الأوقاف السورية.
         </p>
 
         {/* Prominent Large Search Box */}
