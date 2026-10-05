@@ -76,14 +76,35 @@ export function BookCard({
           </Link>
         </h3>
 
-        {/* Author */}
-        <p className="text-xs text-foreground-muted font-medium line-clamp-1 mb-3">
-          {book.author}
-        </p>
+        {/* Author & Library */}
+        <div className="mb-3 space-y-1">
+          <p className="text-xs text-foreground-muted font-medium line-clamp-1">
+            {book.author}
+          </p>
+          {book.library_name && (
+            <p className="text-[11px] text-foreground-subtle truncate flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-secondary shrink-0" />
+              <span>{book.library_name}</span>
+            </p>
+          )}
+        </div>
 
-        {/* Bottom Bar: Rating & Link CTA */}
+        {/* Bottom Bar: Availability / Rating & Link CTA */}
         <div className="mt-auto pt-2.5 border-t border-border-subtle flex items-center justify-between">
-          <RatingStars rating={book.rating} size="xs" />
+          {book.available_copies !== undefined ? (
+            <span
+              className={cn(
+                "text-[10px] font-bold px-1.5 py-0.5 rounded",
+                book.available_copies > 0
+                  ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                  : "bg-amber-50 text-amber-800 border border-amber-200"
+              )}
+            >
+              {book.available_copies > 0 ? "متاح للاستعارة" : "طلب انتظار"}
+            </span>
+          ) : (
+            <RatingStars rating={book.rating} size="xs" />
+          )}
 
           <Link
             href={`/books/${book.id}`}

@@ -1,8 +1,14 @@
+"use client";
+
 import React from "react";
 import { Heart, BookmarkCheck } from "lucide-react";
 import { formatArabicNumber } from "@/lib/utils";
+import { useFavorites } from "@/hooks/useFavorites";
 
-export function FavoritesHeader({ count = 0 }) {
+export function FavoritesHeader({ count: propCount }) {
+  const { count: hookCount } = useFavorites();
+  const count = typeof propCount === "number" ? propCount : hookCount;
+
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-border-subtle mb-8">
       <div className="space-y-1">

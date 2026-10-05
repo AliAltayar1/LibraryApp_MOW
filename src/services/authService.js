@@ -1,4 +1,4 @@
-import { apiClient, setAccessToken, clearAuthData } from "@/lib/apiClient";
+import { apiClient, setAccessToken, clearAuthData, refreshAccessToken } from "@/lib/apiClient";
 
 export const authService = {
   /**
@@ -76,15 +76,8 @@ export const authService = {
    * POST /accounts/refresh
    */
   async refresh() {
-    const response = await apiClient.post("/accounts/refresh", null, {
-      skipAuth: true,
-    });
-
-    if (response?.data?.access) {
-      setAccessToken(response.data.access);
-    }
-
-    return response.data;
+    const newAccess = await refreshAccessToken();
+    return { access: newAccess };
   },
 
   /**

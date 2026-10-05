@@ -1,46 +1,45 @@
 import React from "react";
-import { Bookmark, BookOpen, Clock, Library } from "lucide-react";
+import { Bookmark, BookOpen, Clock, CheckCircle2, Inbox } from "lucide-react";
 import { formatArabicNumber } from "@/lib/utils";
 
-export function ProfileStats({ profile, stats }) {
-  // Support both new profile API and legacy stats structure
-  const favCount = profile?.favorites_count ?? stats?.savedBooks ?? 0;
-  const borrowedCount = profile?.borrowed_books_count ?? stats?.recentlyViewed ?? 0;
-  const overdueCount = profile?.overdue_books_count ?? stats?.contributions ?? 0;
-  const availableCount = profile?.available_books ?? stats?.downloads ?? 0;
-
+export function ProfileStats({
+  activeBorrowsCount = 0,
+  pendingRequestsCount = 0,
+  returnedBorrowsCount = 0,
+  favoritesCount = 0,
+}) {
   const items = [
     {
-      label: "كتب محفوظة في المفضلة",
-      value: favCount,
-      icon: Bookmark,
-      color: "text-secondary",
-      bg: "bg-secondary-50",
-      description: "المراجع المحفوظة للقراءة لاحقاً",
-    },
-    {
-      label: "كتب قيد الاستعارة حالياً",
-      value: borrowedCount,
+      label: "استعارات نشطة حالياً",
+      value: activeBorrowsCount,
       icon: BookOpen,
       color: "text-primary",
       bg: "bg-primary-50",
-      description: "المصنفات المستعارة قيد المطالعة",
+      description: "المصنفات قيد المطالعة بحوزتك حالياً",
     },
     {
-      label: "كتب متأخرة عن الإرجاع",
-      value: overdueCount,
+      label: "طلبات استعارة قيد المراجعة",
+      value: pendingRequestsCount,
       icon: Clock,
-      color: overdueCount > 0 ? "text-error" : "text-foreground-muted",
-      bg: overdueCount > 0 ? "bg-red-50" : "bg-surface-muted",
-      description: overdueCount > 0 ? "يرجى تسليمها للمكتبة" : "لا توجد كتب متأخرة",
+      color: "text-amber-600",
+      bg: "bg-amber-50",
+      description: "طلبات بانتظار موافقة أمين المكتبة",
     },
     {
-      label: "الحد المتاح للاستعارة",
-      value: availableCount,
-      icon: Library,
-      color: "text-blue-600",
-      bg: "bg-blue-50",
-      description: "رصيد الكتب المسموح باستعارتها",
+      label: "الكتب المُرجعة للمكتبة",
+      value: returnedBorrowsCount,
+      icon: CheckCircle2,
+      color: "text-emerald-600",
+      bg: "bg-emerald-50",
+      description: "السجل التراكمي للمصنفات المعادة بنجاح",
+    },
+    {
+      label: "المحفوظات في المفضلة",
+      value: favoritesCount,
+      icon: Bookmark,
+      color: "text-secondary",
+      bg: "bg-secondary-50",
+      description: "المراجع المحفوظة للقراءة والمتابعة",
     },
   ];
 

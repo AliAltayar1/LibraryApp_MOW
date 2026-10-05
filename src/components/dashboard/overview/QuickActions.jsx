@@ -23,21 +23,38 @@ export function QuickActions({ onOpenAddModal }) {
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {/* Add Book */}
-        <button
-          type="button"
-          onClick={onOpenAddModal}
-          className="flex flex-col items-center justify-center p-4 rounded-xl border border-dashed border-primary/40 bg-primary-50/50 hover:bg-primary-50 hover:border-primary text-primary transition-all text-center group"
-        >
-          <div className="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center mb-2 shadow-subtle group-hover:scale-105 transition-transform">
-            <Plus className="w-5 h-5" />
-          </div>
-          <span className="text-xs font-bold text-foreground">
-            إضافة كتاب جديد
-          </span>
-          <span className="text-[10px] text-foreground-subtle mt-0.5">
-            فهرسة ونشر مصنف
-          </span>
-        </button>
+        {onOpenAddModal ? (
+          <button
+            type="button"
+            onClick={onOpenAddModal}
+            className="flex flex-col items-center justify-center p-4 rounded-xl border border-dashed border-primary/40 bg-primary-50/50 hover:bg-primary-50 hover:border-primary text-primary transition-all text-center group"
+          >
+            <div className="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center mb-2 shadow-subtle group-hover:scale-105 transition-transform">
+              <Plus className="w-5 h-5" />
+            </div>
+            <span className="text-xs font-bold text-foreground">
+              إضافة كتاب جديد
+            </span>
+            <span className="text-[10px] text-foreground-subtle mt-0.5">
+              فهرسة ونشر مصنف
+            </span>
+          </button>
+        ) : (
+          <Link
+            href="/dashboard/books"
+            className="flex flex-col items-center justify-center p-4 rounded-xl border border-dashed border-primary/40 bg-primary-50/50 hover:bg-primary-50 hover:border-primary text-primary transition-all text-center group"
+          >
+            <div className="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center mb-2 shadow-subtle group-hover:scale-105 transition-transform">
+              <Plus className="w-5 h-5" />
+            </div>
+            <span className="text-xs font-bold text-foreground">
+              إضافة كتاب جديد
+            </span>
+            <span className="text-[10px] text-foreground-subtle mt-0.5">
+              فهرسة ونشر مصنف
+            </span>
+          </Link>
+        )}
 
         {/* View All Books */}
         <Link

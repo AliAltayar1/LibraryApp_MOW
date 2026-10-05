@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
-import { Heart, BookOpen, Download, Share2, Check } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Heart, Share2, Check, AlertCircle, Loader2 } from "lucide-react";
 import { Button } from "@/ui/Button";
 import { useFavorites } from "@/hooks/useFavorites";
+import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 
 export function FavoriteButton({
@@ -12,19 +14,55 @@ export function FavoriteButton({
   size = "md",
   className,
 }) {
+  const router = useRouter();
+  const { isAuthenticated, user } = useAuth();
   const { isFavorite, toggleFavorite } = useFavorites();
   const [isPending, setIsPending] = useState(false);
+  const [feedback, setFeedback] = useState(null); // { message, type: 'error' | 'info' }
+
   const active = isFavorite(bookId);
 
-  const handleClick = (e) => {
+  const handleClick = async (e) => {
     e.preventDefault();
     e.stopPropagation();
 
+    // Check authentication
+    if (!isAuthenticated) {
+      setFeedback({ message: "يرجى تسجيل الدخول لحفظ الكتاب", type: "info" });
+      setTimeout(() => {
+        router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+      }, 1200);
+      return;
+    }
+
+    // Role check: Only READER role is allowed by backend contract
+    if (user?.role?.code && user.role.code !== "READER") {
+      setFeedback({
+        message: "المفضلة متاحة لحسابات القراء فقط",
+        type: "error",
+      });
+      setTimeout(() => setFeedback(null), 3000);
+      return;
+    }
+
     setIsPending(true);
-    toggleFavorite(bookId);
-    setTimeout(() => {
+    setFeedback(null);
+
+    try {
+      await toggleFavorite(bookId);
+    } catch (err) {
+      const errMsg =
+        err.code === "PERMISSION_DENIED"
+          ? "المفضلة متاحة للقراء فقط."
+          : err.code === "NOT_FOUND" || err.status === 404
+          ? "المصنف خارج نطاق محافظتك أو غير متاح."
+          : err.message || "تعذر تحديث المفضلة.";
+
+      setFeedback({ message: errMsg, type: "error" });
+      setTimeout(() => setFeedback(null), 3500);
+    } finally {
       setIsPending(false);
-    }, 150);
+    }
   };
 
   const sizeClasses = {
@@ -40,31 +78,52 @@ export function FavoriteButton({
   };
 
   return (
-    <button
-      type="button"
-      onClick={handleClick}
-      disabled={isPending}
-      aria-label={active ? "إزالة من قائمة المفضلة" : "إضافة إلى قائمة المفضلة"}
-      aria-pressed={active}
-      className={cn(
-        "relative rounded-full flex items-center justify-center transition-all duration-200 shadow-sm",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary",
-        active
-          ? "bg-red-50 text-red-600 border border-red-200 hover:bg-red-100"
-          : "bg-surface/90 text-foreground-subtle border border-border hover:text-red-500 hover:bg-surface hover:border-red-200",
-        sizeClasses[size],
-        className
-      )}
-    >
-      <Heart
+    <div className="relative inline-flex items-center justify-center">
+      <button
+        type="button"
+        onClick={handleClick}
+        disabled={isPending}
+        aria-label={active ? "إزالة من قائمة المفضلة" : "إضافة إلى قائمة المفضلة"}
+        aria-pressed={active}
         className={cn(
-          iconSizes[size],
-          "transition-transform duration-200",
-          active && "fill-current scale-110",
-          isPending && "scale-90"
+          "relative rounded-full flex items-center justify-center transition-all duration-200 shadow-sm",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary",
+          active
+            ? "bg-red-50 text-red-600 border border-red-200 hover:bg-red-100"
+            : "bg-surface/90 text-foreground-subtle border border-border hover:text-red-500 hover:bg-surface hover:border-red-200",
+          sizeClasses[size],
+          className
         )}
-      />
-    </button>
+      >
+        {isPending ? (
+          <Loader2 className={cn(iconSizes[size], "animate-spin text-red-500")} />
+        ) : (
+          <Heart
+            className={cn(
+              iconSizes[size],
+              "transition-transform duration-200",
+              active && "fill-current scale-110",
+              isPending && "scale-90"
+            )}
+          />
+        )}
+      </button>
+
+      {/* Floating feedback tooltip */}
+      {feedback && (
+        <div
+          role="tooltip"
+          className={cn(
+            "absolute z-50 bottom-full mb-1.5 start-1/2 -translate-x-1/2 rtl:translate-x-1/2 px-2.5 py-1 rounded-md text-[11px] font-medium whitespace-nowrap shadow-md pointer-events-none transition-all animate-in fade-in zoom-in-95",
+            feedback.type === "error"
+              ? "bg-red-900 text-white border border-red-800"
+              : "bg-primary-900 text-white border border-primary-800"
+          )}
+        >
+          <span>{feedback.message}</span>
+        </div>
+      )}
+    </div>
   );
 }
 

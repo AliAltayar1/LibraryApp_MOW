@@ -1,27 +1,12 @@
 import React from "react";
-import { dashboardService } from "@/services/dashboardService";
-import { booksService } from "@/services/booksService";
-import { DashboardOverviewView } from "@/components/dashboard/overview/DashboardOverviewView";
+import { DashboardStatsManager } from "@/components/dashboard/stats/DashboardStatsManager";
 
 export const metadata = {
-  title: "لوحة المتابعة المركزية | وزارة الأوقاف السورية",
-  description: "المؤشرات العامة وإحصائيات الرقمنة للمكتبة الإلكترونية الوقفية.",
+  title: "لوحة المتابعة والإحصائيات المركزية | وزارة الأوقاف السورية",
+  description:
+    "مؤشرات الأداء الشاملة والخط الزمني للإعارات والطلبات والتوزيع الجغرافي للمكتبة الإلكترونية الوقفية.",
 };
 
-export default async function DashboardPage() {
-  const [stats, categories, activities, recentBooksRes] = await Promise.all([
-    dashboardService.getOverviewStats(),
-    dashboardService.getCategoriesDistribution(),
-    dashboardService.getRecentActivities(),
-    dashboardService.getDashboardBooks({ pageSize: 5 }),
-  ]);
-
-  return (
-    <DashboardOverviewView
-      stats={stats}
-      categories={categories}
-      activities={activities}
-      recentBooks={recentBooksRes.items}
-    />
-  );
+export default function DashboardPage() {
+  return <DashboardStatsManager />;
 }

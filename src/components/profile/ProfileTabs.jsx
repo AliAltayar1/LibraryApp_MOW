@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/ui/Tabs";
 import { Button } from "@/ui/Button";
 import { Input } from "@/ui/Input";
 import { Badge } from "@/ui/Badge";
+import { Pagination } from "@/shared/Pagination";
 import {
   Clock,
   BookOpen,
@@ -27,6 +28,8 @@ import {
   XCircle,
   Inbox,
   ExternalLink,
+  ChevronLeft,
+  Filter,
 } from "lucide-react";
 import { ErrorAlert } from "@/shared/ErrorAlert";
 import { useAuth } from "@/hooks/useAuth";
@@ -37,7 +40,7 @@ import {
 } from "@/services/borrowingService";
 import { formatArabicNumber, cn } from "@/lib/utils";
 
-export function ProfileTabs({ user, profile }) {
+export function ProfileTabs({ user, profile, onCountsRefresh }) {
   const { updateProfile, changePassword } = useAuth();
 
   // Profile Edit State
@@ -71,44 +74,67 @@ export function ProfileTabs({ user, profile }) {
 
   // Borrow Requests State (Reader Scope: GET /dashboard/borrow-requests/)
   const [borrowRequests, setBorrowRequests] = useState([]);
+  const [requestsTotalCount, setRequestsTotalCount] = useState(0);
+  const [requestsPage, setRequestsPage] = useState(1);
+  const [requestsStatusFilter, setRequestsStatusFilter] = useState("ALL");
   const [isLoadingRequests, setIsLoadingRequests] = useState(false);
   const [requestsError, setRequestsError] = useState("");
 
   // Borrows State (Reader Scope: GET /dashboard/borrows/)
   const [borrows, setBorrows] = useState([]);
+  const [borrowsTotalCount, setBorrowsTotalCount] = useState(0);
+  const [borrowsPage, setBorrowsPage] = useState(1);
+  const [borrowsStatusFilter, setBorrowsStatusFilter] = useState("ALL");
   const [isLoadingBorrows, setIsLoadingBorrows] = useState(false);
   const [borrowsError, setBorrowsError] = useState("");
 
-  const fetchRequests = async () => {
+  // Fetch Requests
+  const fetchRequests = useCallback(async () => {
     try {
       setIsLoadingRequests(true);
       setRequestsError("");
-      const res = await borrowingService.getBorrowRequests();
+      const res = await borrowingService.getBorrowRequests({
+        status: requestsStatusFilter !== "ALL" ? requestsStatusFilter : "",
+        page: requestsPage,
+        pageSize: 20,
+      });
       setBorrowRequests(res.results || []);
+      setRequestsTotalCount(res.count || 0);
+      if (onCountsRefresh) onCountsRefresh();
     } catch (err) {
       setRequestsError(err.message || "تعذر تحميل طلبات الاستعارة.");
     } finally {
       setIsLoadingRequests(false);
     }
-  };
+  }, [requestsStatusFilter, requestsPage, onCountsRefresh]);
 
-  const fetchBorrowsList = async () => {
+  // Fetch Borrows
+  const fetchBorrowsList = useCallback(async () => {
     try {
       setIsLoadingBorrows(true);
       setBorrowsError("");
-      const res = await borrowingService.getBorrows();
+      const res = await borrowingService.getBorrows({
+        status: borrowsStatusFilter !== "ALL" ? borrowsStatusFilter : "",
+        page: borrowsPage,
+        pageSize: 20,
+      });
       setBorrows(res.results || []);
+      setBorrowsTotalCount(res.count || 0);
+      if (onCountsRefresh) onCountsRefresh();
     } catch (err) {
       setBorrowsError(err.message || "تعذر تحميل سجل الاستعارات.");
     } finally {
       setIsLoadingBorrows(false);
     }
-  };
+  }, [borrowsStatusFilter, borrowsPage, onCountsRefresh]);
 
   useEffect(() => {
     fetchRequests();
+  }, [fetchRequests]);
+
+  useEffect(() => {
     fetchBorrowsList();
-  }, []);
+  }, [fetchBorrowsList]);
 
   // Handle Profile Update Submit
   const handleProfileSubmit = async (e) => {
@@ -122,6 +148,7 @@ export function ProfileTabs({ user, profile }) {
     try {
       await updateProfile(profileForm);
       setProfileSuccessMsg("تم حفظ وتحديث بيانات الملف الشخصي بنجاح.");
+      if (onCountsRefresh) onCountsRefresh();
     } catch (err) {
       setProfileErrorMsg(
         err.message || "فشل تحديث البيانات، يرجى مراجعة الحقول وإعادة المحاولة."
@@ -180,7 +207,10 @@ export function ProfileTabs({ user, profile }) {
   };
 
   const isBorrowingBlocked =
-    profile?.borrowing_blocked || profile?.profile?.borrowing_blocked;
+    profile?.borrowing_blocked || profile?.profile?.borrowing_blocked || user?.borrowing_blocked;
+
+  const requestsTotalPages = Math.ceil(requestsTotalCount / 20) || 1;
+  const borrowsTotalPages = Math.ceil(borrowsTotalCount / 20) || 1;
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-6 sm:p-8 shadow-subtle">
@@ -189,22 +219,21 @@ export function ProfileTabs({ user, profile }) {
           <TabsTrigger value="edit-profile">البيانات الشخصية وتحديث الملف</TabsTrigger>
           <TabsTrigger value="my-requests" className="relative">
             <span>طلبات الاستعارة</span>
-            {borrowRequests.length > 0 && (
-              <span className="ms-1.5 px-1.5 py-0.5 bg-primary/10 text-primary text-[10px] rounded-full font-bold">
-                {formatArabicNumber(borrowRequests.length)}
+            {requestsTotalCount > 0 && (
+              <span className="ms-1.5 px-1.5 py-0.5 bg-amber-100 text-amber-800 text-[10px] rounded-full font-bold">
+                {formatArabicNumber(requestsTotalCount)}
               </span>
             )}
           </TabsTrigger>
           <TabsTrigger value="my-borrows" className="relative">
             <span>الكتب المستعارة</span>
-            {borrows.length > 0 && (
-              <span className="ms-1.5 px-1.5 py-0.5 bg-secondary-50 text-secondary-hover border border-secondary/20 text-[10px] rounded-full font-bold">
-                {formatArabicNumber(borrows.length)}
+            {borrowsTotalCount > 0 && (
+              <span className="ms-1.5 px-1.5 py-0.5 bg-primary/10 text-primary text-[10px] rounded-full font-bold">
+                {formatArabicNumber(borrowsTotalCount)}
               </span>
             )}
           </TabsTrigger>
           <TabsTrigger value="change-password">تغيير كلمة المرور</TabsTrigger>
-          <TabsTrigger value="activity">سجل النشاط والقراءة</TabsTrigger>
           <TabsTrigger value="credentials">بيانات التوثيق والاعتماد</TabsTrigger>
         </TabsList>
 
@@ -239,17 +268,23 @@ export function ProfileTabs({ user, profile }) {
           />
 
           {/* Non-editable system fields banner */}
-          <div className="p-4 rounded-xl bg-surface-muted border border-border-subtle grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+          <div className="p-4 rounded-xl bg-surface-muted border border-border-subtle grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
             <div>
               <span className="text-foreground-subtle block mb-1">اسم المستخدم (المعرف):</span>
               <span className="font-mono font-bold text-foreground">@{user?.username}</span>
             </div>
             <div>
-              <span className="text-foreground-subtle block mb-1">الدور المؤسسي الحالي:</span>
-              <span className="font-semibold text-primary">{user?.role?.label || "عضو"}</span>
+              <span className="text-foreground-subtle block mb-1">الدور المؤسسي:</span>
+              <span className="font-semibold text-primary">{user?.role?.label || "قارئ"}</span>
             </div>
             <div>
-              <span className="text-foreground-subtle block mb-1">حالة الاستعارة:</span>
+              <span className="text-foreground-subtle block mb-1">المحافظة المسجلة:</span>
+              <span className="font-bold text-foreground">
+                محافظة {user?.governorate_name || profile?.governorate || "المعتمدة"}
+              </span>
+            </div>
+            <div>
+              <span className="text-foreground-subtle block mb-1">أهلية الاستعارة:</span>
               {isBorrowingBlocked ? (
                 <span className="font-semibold text-error flex items-center gap-1">
                   <AlertOctagon className="w-3.5 h-3.5" />
@@ -308,6 +343,7 @@ export function ProfileTabs({ user, profile }) {
                 </label>
                 <Input
                   type="email"
+                  dir="ltr"
                   placeholder="name@example.com"
                   value={profileForm.email}
                   onChange={(e) =>
@@ -332,7 +368,7 @@ export function ProfileTabs({ user, profile }) {
                     setProfileForm({ ...profileForm, phone: e.target.value })
                   }
                   startIcon={Phone}
-                  error={!!profileFieldErrors.phone}
+                  error={!!profileFieldErrors["profile.phone"]}
                 />
               </div>
 
@@ -343,13 +379,13 @@ export function ProfileTabs({ user, profile }) {
                 </label>
                 <Input
                   type="text"
-                  placeholder="دمشق - الميدان..."
+                  placeholder="حمص - المركز..."
                   value={profileForm.address}
                   onChange={(e) =>
                     setProfileForm({ ...profileForm, address: e.target.value })
                   }
                   startIcon={MapPin}
-                  error={!!profileFieldErrors.address}
+                  error={!!profileFieldErrors["profile.address"]}
                 />
               </div>
 
@@ -385,7 +421,7 @@ export function ProfileTabs({ user, profile }) {
                     onChange={(e) =>
                       setProfileForm({ ...profileForm, age: e.target.value })
                     }
-                    error={!!profileFieldErrors.age}
+                    error={!!profileFieldErrors["profile.age"]}
                   />
                 </div>
               </div>
@@ -406,27 +442,60 @@ export function ProfileTabs({ user, profile }) {
           </form>
         </TabsContent>
 
-        {/* Tab: My Borrow Requests (Reader Scope: GET /dashboard/borrow-requests/) */}
+        {/* Tab 2: My Borrow Requests (Reader Scope: GET /dashboard/borrow-requests/) */}
         <TabsContent value="my-requests" className="space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-border-subtle">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border-subtle">
             <div>
               <h3 className="text-sm font-bold text-foreground">
                 طلبات الاستعارة الشخصية
               </h3>
               <p className="text-xs text-foreground-muted mt-0.5">
-                متابعة حالة طلبات استعارة المصنفات والكتب الموجهة للمكتبات
+                متابعة حالة طلبات استعارة المصنفات والكتب الموجهة لمكتبات محافظتك
               </p>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={fetchRequests}
-              disabled={isLoadingRequests}
-              className="text-xs gap-1.5"
-            >
-              <RefreshCw className={cn("w-3.5 h-3.5", isLoadingRequests && "animate-spin")} />
-              <span>تحديث</span>
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={fetchRequests}
+                disabled={isLoadingRequests}
+                className="text-xs gap-1.5 h-8"
+              >
+                <RefreshCw className={cn("w-3.5 h-3.5", isLoadingRequests && "animate-spin")} />
+                <span>تحديث</span>
+              </Button>
+            </div>
+          </div>
+
+          {/* Status Filter Badges */}
+          <div className="flex flex-wrap items-center gap-2 pt-1 pb-2">
+            <span className="text-xs text-foreground-muted flex items-center gap-1 me-1">
+              <Filter className="w-3.5 h-3.5 text-secondary" />
+              <span>الحالة:</span>
+            </span>
+            {[
+              { id: "ALL", label: "جميع الطلبات" },
+              { id: "PENDING", label: "قيد المراجعة" },
+              { id: "APPROVED", label: "تمت الموافقة" },
+              { id: "REJECTED", label: "مرفوض" },
+            ].map((st) => (
+              <button
+                key={st.id}
+                type="button"
+                onClick={() => {
+                  setRequestsStatusFilter(st.id);
+                  setRequestsPage(1);
+                }}
+                className={cn(
+                  "px-3 py-1 rounded-full text-xs font-semibold transition-all border",
+                  requestsStatusFilter === st.id
+                    ? "bg-primary text-white border-primary shadow-xs"
+                    : "bg-surface-muted text-foreground-muted border-border hover:border-primary/30"
+                )}
+              >
+                {st.label}
+              </button>
+            ))}
           </div>
 
           {requestsError && (
@@ -459,13 +528,15 @@ export function ProfileTabs({ user, profile }) {
                     })
                   : "—";
 
+                const rejectionReasonText = req.rejection_reason || req.reason;
+
                 return (
                   <div
                     key={req.id}
-                    className="p-4 rounded-xl border border-border bg-surface-muted/40 hover:bg-surface-muted transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+                    className="p-4 rounded-xl border border-border bg-surface hover:border-primary/30 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-xs"
                   >
-                    <div className="space-y-1 min-w-0">
-                      <div className="flex items-center gap-2">
+                    <div className="space-y-1 min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-bold text-sm text-foreground truncate">
                           {bookTitle}
                         </span>
@@ -474,32 +545,42 @@ export function ProfileTabs({ user, profile }) {
                             href={`/books/${req.book_id || req.book}`}
                             className="text-primary hover:underline inline-flex items-center gap-0.5 text-[11px]"
                           >
-                            <span>عرض الكتاب</span>
+                            <span>عرض بطاقة الكتاب</span>
                             <ExternalLink className="w-3 h-3" />
                           </Link>
                         )}
                       </div>
+
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-foreground-muted text-[11px]">
-                        <span>تاريخ الطلب: {requestDate}</span>
+                        <span>تاريخ تقديم الطلب: {requestDate}</span>
                         {req.library_name && <span>المكتبة: {req.library_name}</span>}
                         {req.governorate_name && <span>المحافظة: {req.governorate_name}</span>}
                       </div>
 
                       {/* Display rejection reason if rejected */}
-                      {req.status === "REJECTED" && (req.reason || req.rejection_reason) && (
-                        <div className="mt-1.5 p-2 rounded-lg bg-red-50/70 border border-red-200 text-error text-[11px] flex items-start gap-1.5">
-                          <AlertOctagon className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                          <span>
-                            <strong>سبب الرفض:</strong> {req.reason || req.rejection_reason}
-                          </span>
+                      {req.status === "REJECTED" && rejectionReasonText && (
+                        <div className="mt-2 p-2.5 rounded-lg bg-red-50 border border-red-200 text-error text-[11px] flex items-start gap-2">
+                          <AlertOctagon className="w-4 h-4 shrink-0 mt-0.5" />
+                          <div>
+                            <strong className="block font-bold">سبب الرفض المسجل من إدارة المكتبة:</strong>
+                            <span>{rejectionReasonText}</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Approved notice */}
+                      {req.status === "APPROVED" && (
+                        <div className="mt-1.5 text-[11px] text-emerald-700 flex items-center gap-1 font-medium">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>تمت الموافقة من أمين المكتبة، ويمكنك متابعة حالة الإعارة في تبويب الكتب المستعارة.</span>
                         </div>
                       )}
                     </div>
 
-                    <div className="shrink-0 flex items-center gap-2">
+                    <div className="shrink-0 flex items-center gap-2 self-start sm:self-center">
                       <span
                         className={cn(
-                          "px-2.5 py-1 rounded-full text-[11px] font-bold border",
+                          "px-3 py-1 rounded-full text-xs font-bold border",
                           statusMeta.bgClass
                         )}
                       >
@@ -509,16 +590,29 @@ export function ProfileTabs({ user, profile }) {
                   </div>
                 );
               })}
+
+              {/* Requests Pagination */}
+              {requestsTotalPages > 1 && (
+                <div className="pt-3 flex justify-center">
+                  <Pagination
+                    currentPage={requestsPage}
+                    totalPages={requestsTotalPages}
+                    onPageChange={(p) => setRequestsPage(p)}
+                  />
+                </div>
+              )}
             </div>
           ) : (
             <div className="py-12 text-center space-y-3">
               <Inbox className="w-12 h-12 text-foreground-subtle/40 mx-auto" />
               <div className="space-y-1">
                 <p className="text-xs font-bold text-foreground">
-                  لا توجد طلبات استعارة مسجلة
+                  لا توجد طلبات استعارة مسجلة حالياً
                 </p>
                 <p className="text-[11px] text-foreground-muted max-w-sm mx-auto">
-                  يمكنك تصفح مكتبة الوزارة وطلب استعارة أي مصنف ورقي متاح.
+                  {requestsStatusFilter !== "ALL"
+                    ? "لا توجد طلبات تطابق الفلتر المحدد."
+                    : "يمكنك تصفح فهارس مكتبات محافظتك وتقديم طلب استعارة لأي مصنف ترغب بمطالعته."}
                 </p>
               </div>
               <Link href="/books">
@@ -530,27 +624,59 @@ export function ProfileTabs({ user, profile }) {
           )}
         </TabsContent>
 
-        {/* Tab: My Borrows (Reader Scope: GET /dashboard/borrows/) */}
+        {/* Tab 3: My Borrows (Reader Scope: GET /dashboard/borrows/) */}
         <TabsContent value="my-borrows" className="space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-border-subtle">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border-subtle">
             <div>
               <h3 className="text-sm font-bold text-foreground">
                 سجل الكتب المستعارة
               </h3>
               <p className="text-xs text-foreground-muted mt-0.5">
-                قائمة الكتب المستعارة حالياً وتاريخ إرجاعها وفق النظام الموحد
+                سجل الاستعارات النشطة وسجل المصنفات المعادة لمكتبات الوزارة
               </p>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={fetchBorrowsList}
-              disabled={isLoadingBorrows}
-              className="text-xs gap-1.5"
-            >
-              <RefreshCw className={cn("w-3.5 h-3.5", isLoadingBorrows && "animate-spin")} />
-              <span>تحديث</span>
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={fetchBorrowsList}
+                disabled={isLoadingBorrows}
+                className="text-xs gap-1.5 h-8"
+              >
+                <RefreshCw className={cn("w-3.5 h-3.5", isLoadingBorrows && "animate-spin")} />
+                <span>تحديث</span>
+              </Button>
+            </div>
+          </div>
+
+          {/* Status Filter Badges */}
+          <div className="flex flex-wrap items-center gap-2 pt-1 pb-2">
+            <span className="text-xs text-foreground-muted flex items-center gap-1 me-1">
+              <Filter className="w-3.5 h-3.5 text-secondary" />
+              <span>الحالة:</span>
+            </span>
+            {[
+              { id: "ALL", label: "جميع الاستعارات" },
+              { id: "ACTIVE", label: "قيد الاستعارة (النشطة)" },
+              { id: "RETURNED", label: "تم الإرجاع" },
+            ].map((st) => (
+              <button
+                key={st.id}
+                type="button"
+                onClick={() => {
+                  setBorrowsStatusFilter(st.id);
+                  setBorrowsPage(1);
+                }}
+                className={cn(
+                  "px-3 py-1 rounded-full text-xs font-semibold transition-all border",
+                  borrowsStatusFilter === st.id
+                    ? "bg-primary text-white border-primary shadow-xs"
+                    : "bg-surface-muted text-foreground-muted border-border hover:border-primary/30"
+                )}
+              >
+                {st.label}
+              </button>
+            ))}
           </div>
 
           {borrowsError && (
@@ -582,13 +708,7 @@ export function ProfileTabs({ user, profile }) {
                       day: "numeric",
                     })
                   : "—";
-                const dueDate = b.due_date
-                  ? new Date(b.due_date).toLocaleDateString("ar-SY", {
-                      year: "numeric",
-                      month: "short",
-                      day: "numeric",
-                    })
-                  : null;
+
                 const returnDate = b.returned_at
                   ? new Date(b.returned_at).toLocaleDateString("ar-SY", {
                       year: "numeric",
@@ -597,13 +717,15 @@ export function ProfileTabs({ user, profile }) {
                     })
                   : null;
 
+                const isDirect = b.source === "DIRECT";
+
                 return (
                   <div
                     key={b.id}
-                    className="p-4 rounded-xl border border-border bg-surface-muted/40 hover:bg-surface-muted transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+                    className="p-4 rounded-xl border border-border bg-surface hover:border-primary/30 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-xs"
                   >
-                    <div className="space-y-1 min-w-0">
-                      <div className="flex items-center gap-2">
+                    <div className="space-y-1.5 min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-bold text-sm text-foreground truncate">
                           {bookTitle}
                         </span>
@@ -612,23 +734,34 @@ export function ProfileTabs({ user, profile }) {
                             href={`/books/${b.book_id || b.book}`}
                             className="text-primary hover:underline inline-flex items-center gap-0.5 text-[11px]"
                           >
-                            <span>عرض الكتاب</span>
+                            <span>عرض بطاقة الكتاب</span>
                             <ExternalLink className="w-3 h-3" />
                           </Link>
                         )}
                       </div>
+
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-foreground-muted text-[11px]">
                         <span>تاريخ الاستعارة: {borrowDate}</span>
-                        {dueDate && <span>تاريخ الإرجاع المتوقع: {dueDate}</span>}
-                        {returnDate && <span>تم الإرجاع في: {returnDate}</span>}
                         {b.library_name && <span>المكتبة: {b.library_name}</span>}
+                        {b.governorate_name && <span>المحافظة: {b.governorate_name}</span>}
+                        <span className="text-[10px] bg-surface-muted px-2 py-0.5 rounded border border-border-subtle">
+                          المصدر: {isDirect ? "إعارة مباشرة من الإدارة" : "ناتجة عن موافقة على طلب"}
+                        </span>
                       </div>
+
+                      {returnDate && (
+                        <div className="text-[11px] text-emerald-700 flex items-center gap-1 font-medium">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>تم تسجيل الإرجاع بتاريخ: {returnDate}</span>
+                          {b.returned_by_username && <span>(بواسطة: {b.returned_by_username})</span>}
+                        </div>
+                      )}
                     </div>
 
-                    <div className="shrink-0 flex items-center gap-2">
+                    <div className="shrink-0 flex items-center gap-2 self-start sm:self-center">
                       <span
                         className={cn(
-                          "px-2.5 py-1 rounded-full text-[11px] font-bold border",
+                          "px-3 py-1 rounded-full text-xs font-bold border",
                           statusMeta.bgClass
                         )}
                       >
@@ -638,23 +771,36 @@ export function ProfileTabs({ user, profile }) {
                   </div>
                 );
               })}
+
+              {/* Borrows Pagination */}
+              {borrowsTotalPages > 1 && (
+                <div className="pt-3 flex justify-center">
+                  <Pagination
+                    currentPage={borrowsPage}
+                    totalPages={borrowsTotalPages}
+                    onPageChange={(p) => setBorrowsPage(p)}
+                  />
+                </div>
+              )}
             </div>
           ) : (
             <div className="py-12 text-center space-y-3">
               <BookmarkCheck className="w-12 h-12 text-foreground-subtle/40 mx-auto" />
               <div className="space-y-1">
                 <p className="text-xs font-bold text-foreground">
-                  لا توجد كتب مستعارة حالياً
+                  لا توجد استعارات مسجلة
                 </p>
                 <p className="text-[11px] text-foreground-muted max-w-sm mx-auto">
-                  عند موافقة أمين المكتبة على طلباتك، ستظهر المصنفات المستعارة هنا.
+                  {borrowsStatusFilter !== "ALL"
+                    ? "لا توجد استعارات تطابق الفلتر المحدد."
+                    : "عند موافقة إدارة المكتبة على طلبك أو تسجيل إعارة مباشرة لك، ستظهر تفاصيلها وسجل إرجاعها هنا."}
                 </p>
               </div>
             </div>
           )}
         </TabsContent>
 
-        {/* Tab: Change Password */}
+        {/* Tab 4: Change Password */}
         <TabsContent value="change-password" className="space-y-6">
           <div className="border-b border-border-subtle pb-4">
             <h3 className="text-sm font-bold text-foreground">
@@ -762,61 +908,7 @@ export function ProfileTabs({ user, profile }) {
           </form>
         </TabsContent>
 
-        {/* Tab 3: Recent Activity */}
-        <TabsContent value="activity" className="space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-border-subtle">
-            <h3 className="text-sm font-bold text-foreground">
-              سجل النشاط والقراءة الأخير
-            </h3>
-            <span className="text-xs text-foreground-subtle">
-              يتم تحديث السجل تلقائياً
-            </span>
-          </div>
-
-          {profile?.activities && profile.activities.length > 0 ? (
-            <div className="space-y-3">
-              {profile.activities.map((act, idx) => (
-                <div
-                  key={act.id || idx}
-                  className="flex items-center justify-between p-3.5 rounded-xl border border-border-subtle bg-surface-muted/60 hover:bg-surface-muted transition-colors text-xs"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-primary-50 text-primary flex items-center justify-center shrink-0">
-                      <BookOpen className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <span className="font-semibold text-foreground-muted block mb-0.5">
-                        {act.action || act.activity_type || "نشاط مكتبة"}
-                      </span>
-                      <span className="font-bold text-foreground">
-                        {act.target || act.description || act.book_title || "عملية مطالعة"}
-                      </span>
-                    </div>
-                  </div>
-
-                  {act.created_at && (
-                    <div className="flex items-center gap-1.5 text-foreground-subtle shrink-0">
-                      <Clock className="w-3.5 h-3.5" />
-                      <span>{new Date(act.created_at).toLocaleDateString("ar-SY")}</span>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="py-12 text-center space-y-2">
-              <FileText className="w-10 h-10 text-foreground-subtle/50 mx-auto" />
-              <p className="text-xs font-semibold text-foreground">
-                لا توجد أنشطة مسجلة حتى الآن
-              </p>
-              <p className="text-[11px] text-foreground-muted max-w-sm mx-auto">
-                عند قيامك بقراءة كتب أو حفظ مراجع في المفضلة، ستظهر الأنشطة في هذا السجل.
-              </p>
-            </div>
-          )}
-        </TabsContent>
-
-        {/* Tab 4: Credentials & Scope */}
+        {/* Tab 5: Credentials & Scope */}
         <TabsContent value="credentials" className="space-y-4">
           <div className="border-b border-border-subtle pb-3">
             <h3 className="text-sm font-bold text-foreground">
@@ -839,7 +931,7 @@ export function ProfileTabs({ user, profile }) {
 
             <div className="p-3.5 rounded-xl border border-border-subtle bg-surface-muted">
               <span className="text-foreground-subtle block mb-1">
-                الدور الوظيفي المعتمد في الهيكلية:
+                الدور المعتمد:
               </span>
               <div className="flex items-center gap-2 mt-1">
                 <Badge variant="gold" size="sm">
@@ -853,12 +945,28 @@ export function ProfileTabs({ user, profile }) {
 
             <div className="p-3.5 rounded-xl border border-border-subtle bg-surface-muted">
               <span className="text-foreground-subtle block mb-1">
-                حالة الحساب والنفاذ:
+                نطاق المحافظة المعتمد:
               </span>
-              <span className="font-semibold text-success flex items-center gap-1.5 mt-0.5">
-                <CheckCircle2 className="w-4 h-4" />
-                <span>حساب نشط ومعتمد لدى وزارة الأوقاف السورية</span>
+              <span className="font-bold text-foreground">
+                محافظة {user?.governorate_name || profile?.governorate || "المسجلة"}
               </span>
+            </div>
+
+            <div className="p-3.5 rounded-xl border border-border-subtle bg-surface-muted">
+              <span className="text-foreground-subtle block mb-1">
+                أهلية الاستعارة:
+              </span>
+              {isBorrowingBlocked ? (
+                <span className="font-semibold text-error flex items-center gap-1.5 mt-0.5">
+                  <AlertOctagon className="w-4 h-4" />
+                  <span>محظور من الاستعارة (يرجى مراجعة إدارة المكتبة)</span>
+                </span>
+              ) : (
+                <span className="font-semibold text-success flex items-center gap-1.5 mt-0.5">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>مؤهل للاستعارة من مكتبات المحافظة</span>
+                </span>
+              )}
             </div>
           </div>
         </TabsContent>

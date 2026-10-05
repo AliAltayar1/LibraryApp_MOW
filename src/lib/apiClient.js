@@ -204,8 +204,14 @@ export async function refreshAccessToken() {
   isRefreshing = true;
 
   try {
+    // In browser, use same-origin proxy /accounts/refresh to ensure browser sends HttpOnly cookie
+    const refreshUrl =
+      typeof window !== "undefined"
+        ? "/accounts/refresh"
+        : `${API_BASE_URL}/accounts/refresh`;
+
     const refreshResponse = await axios.post(
-      `${API_BASE_URL}/accounts/refresh`,
+      refreshUrl,
       null,
       {
         headers: {

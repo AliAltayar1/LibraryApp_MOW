@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { Lock, LogIn, ArrowRight } from "lucide-react";
 import { Container } from "@/shared/Container";
@@ -11,9 +11,58 @@ import { ProfileTabs } from "./ProfileTabs";
 import { Skeleton } from "@/ui/Skeleton";
 import { Button } from "@/ui/Button";
 import { useAuth } from "@/hooks/useAuth";
+import { borrowingService } from "@/services/borrowingService";
+import { favoritesService } from "@/services/favoritesService";
 
 export function ProfileView() {
   const { user, profile, isAuthenticated, isLoading } = useAuth();
+
+  const [activeBorrowsCount, setActiveBorrowsCount] = useState(0);
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+  const [returnedBorrowsCount, setReturnedBorrowsCount] = useState(0);
+  const [favoritesCount, setFavoritesCount] = useState(0);
+
+  // Fetch live counts strictly adhering to backend contract
+  const fetchCounts = useCallback(async () => {
+    if (!isAuthenticated) return;
+
+    try {
+      // 1. Active borrows count: GET /dashboard/borrows/?status=ACTIVE
+      // 2. Pending requests count: GET /dashboard/borrow-requests/?status=PENDING
+      // 3. Returned borrows count: GET /dashboard/borrows/?status=RETURNED
+      const [activeRes, pendingRes, returnedRes] = await Promise.all([
+        borrowingService.getBorrows({ status: "ACTIVE", pageSize: 1 }).catch(() => ({ count: 0 })),
+        borrowingService.getBorrowRequests({ status: "PENDING", pageSize: 1 }).catch(() => ({ count: 0 })),
+        borrowingService.getBorrows({ status: "RETURNED", pageSize: 1 }).catch(() => ({ count: 0 })),
+      ]);
+
+      setActiveBorrowsCount(activeRes?.count ?? 0);
+      setPendingRequestsCount(pendingRes?.count ?? 0);
+      setReturnedBorrowsCount(returnedRes?.count ?? 0);
+
+      // Favorites count
+      setFavoritesCount(favoritesService.getCachedCount());
+    } catch {
+      // Ignore background count errors
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    fetchCounts();
+
+    const handleFavUpdate = (e) => {
+      if (typeof e.detail?.count === "number") {
+        setFavoritesCount(e.detail.count);
+      } else {
+        setFavoritesCount(favoritesService.getCachedCount());
+      }
+    };
+
+    window.addEventListener("favorites-updated", handleFavUpdate);
+    return () => {
+      window.removeEventListener("favorites-updated", handleFavUpdate);
+    };
+  }, [fetchCounts]);
 
   // Loading State
   if (isLoading) {
@@ -69,8 +118,17 @@ export function ProfileView() {
     <Container className="py-8">
       <Breadcrumbs items={[{ label: "الملف الشخصي" }]} />
       <ProfileHeader user={user} profile={profile} />
-      <ProfileStats profile={profile} />
-      <ProfileTabs user={user} profile={profile} />
+      <ProfileStats
+        activeBorrowsCount={activeBorrowsCount}
+        pendingRequestsCount={pendingRequestsCount}
+        returnedBorrowsCount={returnedBorrowsCount}
+        favoritesCount={favoritesCount}
+      />
+      <ProfileTabs
+        user={user}
+        profile={profile}
+        onCountsRefresh={fetchCounts}
+      />
     </Container>
   );
 }
