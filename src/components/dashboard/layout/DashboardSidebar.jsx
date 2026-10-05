@@ -46,13 +46,13 @@ export const DASHBOARD_NAV_ITEMS = [
     name: "طلبات الاستعارة",
     href: "/dashboard/borrow-requests",
     icon: Inbox,
-    badge: "جديد",
+    badge: null,
   },
   {
     name: "سجل الاستعارات",
     href: "/dashboard/borrows",
     icon: BookmarkCheck,
-    badge: "جديد",
+    badge: null,
   },
   {
     name: "المؤلفون والعلماء",
@@ -105,7 +105,7 @@ export function DashboardSidebar({ isOpen, onClose }) {
       <aside
         className={cn(
           "fixed top-0 bottom-0 start-0 z-50 w-72 bg-surface border-e border-border flex flex-col transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static shadow-card lg:shadow-none",
-          isOpen ? "translate-x-0" : "translate-x-full lg:translate-x-0"
+          isOpen ? "translate-x-0" : "translate-x-full lg:translate-x-0",
         )}
       >
         {/* Top Header & Branding */}
@@ -145,7 +145,10 @@ export function DashboardSidebar({ isOpen, onClose }) {
         </div>
 
         {/* Navigation Items */}
-        <nav className="flex-1 px-3 py-2 space-y-1.5 overflow-y-auto" aria-label="تنقل لوحة التحكم">
+        <nav
+          className="flex-1 px-3 py-2 space-y-1.5 overflow-y-auto"
+          aria-label="تنقل لوحة التحكم"
+        >
           {DASHBOARD_NAV_ITEMS.map((item) => {
             const isActive =
               item.href === "/dashboard"
@@ -163,7 +166,7 @@ export function DashboardSidebar({ isOpen, onClose }) {
                   "group flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200",
                   isActive
                     ? "bg-primary text-white shadow-subtle"
-                    : "text-foreground-muted hover:text-foreground hover:bg-surface-muted"
+                    : "text-foreground-muted hover:text-foreground hover:bg-surface-muted",
                 )}
               >
                 <div className="flex items-center gap-3">
@@ -172,7 +175,7 @@ export function DashboardSidebar({ isOpen, onClose }) {
                       "p-1.5 rounded-lg transition-colors",
                       isActive
                         ? "bg-white/15 text-white"
-                        : "bg-surface-muted text-foreground-muted group-hover:text-primary group-hover:bg-primary-50"
+                        : "bg-surface-muted text-foreground-muted group-hover:text-primary group-hover:bg-primary-50",
                     )}
                   >
                     <Icon className="w-4 h-4" />
@@ -187,13 +190,15 @@ export function DashboardSidebar({ isOpen, onClose }) {
                         "text-[10px] font-bold px-2 py-0.5 rounded-full",
                         isActive
                           ? "bg-secondary text-primary-900"
-                          : "bg-secondary-50 text-secondary-hover border border-secondary/20"
+                          : "bg-secondary-50 text-secondary-hover border border-secondary/20",
                       )}
                     >
                       {item.badge}
                     </span>
                   )}
-                  {isActive && <ChevronLeft className="w-4 h-4 text-white/70" />}
+                  {isActive && (
+                    <ChevronLeft className="w-4 h-4 text-white/70" />
+                  )}
                 </div>
               </Link>
             );

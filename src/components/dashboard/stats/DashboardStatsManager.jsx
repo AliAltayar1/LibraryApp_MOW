@@ -25,10 +25,10 @@ import { QuickActions } from "@/components/dashboard/overview/QuickActions";
 import { cn } from "@/lib/utils";
 
 export function DashboardStatsManager() {
-  const { user } = useAuth();
+  const { user, isAuthenticated, isLoading: isAuthLoading } = useAuth();
 
   // Role detection
-  const roleCode = user?.role?.code || user?.role || "MINISTRY_ADMIN";
+  const roleCode = user?.role?.code || (typeof user?.role === "string" ? user.role : "") || "";
   const isReader = roleCode === "READER";
 
   // Filter States
@@ -192,6 +192,27 @@ export function DashboardStatsManager() {
     setSelectedLibrary(""); // reset library when gov changes
   };
 
+  // If not authenticated and done loading auth
+  if (!isAuthenticated && !isAuthLoading) {
+    return (
+      <div className="rounded-2xl border border-border bg-surface p-8 sm:p-12 text-center space-y-4 max-w-lg mx-auto my-12">
+        <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary mx-auto flex items-center justify-center">
+          <AlertCircle className="w-7 h-7" />
+        </div>
+        <h2 className="text-xl font-bold text-foreground font-arabic">تسجيل الدخول مطلوب</h2>
+        <p className="text-xs sm:text-sm text-foreground-muted leading-relaxed">
+          لوحة الإحصائيات المركزية مخصصة لإدارة الوزارة وأمناء المكتبات. يرجى تسجيل الدخول بحساب مصرح به للوصول إلى المؤشرات.
+        </p>
+        <a
+          href="/login"
+          className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary-hover transition-colors shadow-subtle"
+        >
+          الانتقال إلى تسجيل الدخول
+        </a>
+      </div>
+    );
+  }
+
   // If user is a Reader or API returned 403
   if (permissionDenied) {
     return <StatsReaderDenied />;
@@ -314,11 +335,19 @@ export function DashboardStatsManager() {
           {/* SECTION 1: OVERVIEW KPIS */}
           {(activeTab === "all" || activeTab === "overview") && (
             <div className="space-y-8 animate-in fade-in duration-200">
-              <StatsOverviewCards
-                overviewData={overviewData}
-                periodInfo={periodInfo}
-              />
-              <StatsCatalogBreakdown overviewData={overviewData} />
+              {overviewData ? (
+                <>
+                  <StatsOverviewCards
+                    overviewData={overviewData}
+                    periodInfo={periodInfo}
+                  />
+                  <StatsCatalogBreakdown overviewData={overviewData} />
+                </>
+              ) : (
+                <div className="p-8 text-center bg-surface border border-border rounded-2xl text-xs text-foreground-muted">
+                  لا تتوفر مؤشرات إحصائية حالياً لهذه الفترة أو جاري المزامنة مع الخادم.
+                </div>
+              )}
               <QuickActions />
             </div>
           )}

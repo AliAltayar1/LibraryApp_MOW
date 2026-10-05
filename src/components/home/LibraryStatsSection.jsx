@@ -1,16 +1,43 @@
 import React from "react";
 import { Container } from "@/shared/Container";
-import { MOCK_STATS } from "@/data/mockStats";
 import { BookMarked, Scroll, Layers, Users } from "lucide-react";
+import { formatArabicNumber } from "@/lib/utils";
 
 const STAT_ICONS = {
   books: BookMarked,
-  manuscripts: Scroll,
+  copies: Scroll,
   categories: Layers,
-  readers: Users,
+  borrowed: Users,
 };
 
-export function LibraryStatsSection() {
+export function LibraryStatsSection({ stats = {} }) {
+  const dynamicStats = [
+    {
+      id: "books",
+      label: "مطبوع ودراسة مسجلة",
+      formattedValue: `${formatArabicNumber(stats?.totalBooks ?? 0)}`,
+      description: "مؤلفات محققة ومسجلة في المنصة",
+    },
+    {
+      id: "categories",
+      label: "تصنيف علمي وتخصصي",
+      formattedValue: `${formatArabicNumber(stats?.totalCategories ?? 0)}`,
+      description: "شاملة فروع العلوم والدراسات",
+    },
+    {
+      id: "copies",
+      label: "نسخة متاحة للمطالعة",
+      formattedValue: `${formatArabicNumber(stats?.totalCopies ?? (stats?.totalBooks ?? 0))}`,
+      description: "نسخ ومطبوعات موثقة ومتاحة",
+    },
+    {
+      id: "borrowed",
+      label: "عملية إعارة وتداول",
+      formattedValue: `${formatArabicNumber(stats?.totalBorrowed ?? 0)}`,
+      description: "إعارات موثقة عبر النظام الرقمي",
+    },
+  ];
+
   return (
     <section className="relative py-14 sm:py-20 bg-primary-900 text-white overflow-hidden border-y border-secondary/30">
       {/* Subtle Islamic Geometry Watermark */}
@@ -30,7 +57,7 @@ export function LibraryStatsSection() {
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
-          {MOCK_STATS.map((stat) => {
+          {dynamicStats.map((stat) => {
             const Icon = STAT_ICONS[stat.id] || BookMarked;
 
             return (

@@ -1,7 +1,7 @@
 import { apiClient, ApiError } from "@/lib/apiClient";
 
 /**
- * Service for the new Dashboard Statistics APIs:
+ * Service for the Dashboard Statistics APIs:
  * - GET /dashboard/stats/overview/
  * - GET /dashboard/stats/timeline/
  * - GET /dashboard/stats/rankings/
@@ -34,11 +34,21 @@ function buildQueryParams({
   }
 
   // Scope filters
-  if (governorate !== null && governorate !== undefined && governorate !== "" && governorate !== "all") {
+  if (
+    governorate !== null &&
+    governorate !== undefined &&
+    governorate !== "" &&
+    governorate !== "all"
+  ) {
     params.append("governorate", String(governorate));
   }
 
-  if (library !== null && library !== undefined && library !== "" && library !== "all") {
+  if (
+    library !== null &&
+    library !== undefined &&
+    library !== "" &&
+    library !== "all"
+  ) {
     params.append("library", String(library));
   }
 
@@ -49,384 +59,6 @@ function buildQueryParams({
   }
 
   return params.toString();
-}
-
-/**
- * Generate fallback mock data strictly adhering to backend contract
- * used when previewing or when offline / unauthenticated during dev.
- */
-function getFallbackOverview(periodType = "30d") {
-  const isSevenDays = periodType === "7d";
-  const days = isSevenDays ? 7 : 30;
-  const now = new Date();
-  const past = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
-  const formatDate = (d) => d.toISOString().split("T")[0];
-
-  return {
-    scope: {
-      level: "MINISTRY",
-      governorate: null,
-      library: null,
-    },
-    period: {
-      type: periodType,
-      date_from: formatDate(past),
-      date_to: formatDate(now),
-      days,
-      timezone: "Asia/Damascus",
-    },
-    organization: {
-      governorates_count: 14,
-      active_governorates_count: 12,
-      inactive_governorates_count: 2,
-      libraries_count: 52,
-      active_libraries_count: 48,
-      inactive_libraries_count: 4,
-    },
-    users: {
-      readers_count: 14250,
-      active_readers_count: 13600,
-      inactive_readers_count: 650,
-      borrowing_blocked_readers_count: 42,
-      librarians_count: 108,
-      active_librarians_count: 104,
-      inactive_librarians_count: 4,
-    },
-    catalog: {
-      books_count: 24890,
-      active_books_count: 23150,
-      archived_books_count: 1740,
-      total_copies: 48600,
-      available_copies: 38920,
-      borrowed_copies: 9680,
-      unavailable_books_count: 64,
-      authors_count: 2150,
-      categories_count: 48,
-    },
-    borrowing: {
-      current: {
-        active_borrows: 3840,
-        returned_borrows_total: 54200,
-      },
-      period: {
-        borrows_created: isSevenDays ? 280 : 1150,
-        direct_borrows: isSevenDays ? 160 : 690,
-        request_borrows: isSevenDays ? 120 : 460,
-        returns: isSevenDays ? 245 : 980,
-      },
-    },
-    requests: {
-      current: {
-        pending_requests: 35,
-      },
-      period: {
-        requests_created: isSevenDays ? 145 : 590,
-        approved_requests: isSevenDays ? 120 : 485,
-        rejected_requests: isSevenDays ? 18 : 72,
-        decided_requests: isSevenDays ? 138 : 557,
-        approval_rate: 87.1,
-        rejection_rate: 12.9,
-      },
-    },
-    favorites: {
-      current: {
-        favorites_count: 6840,
-      },
-      period: {
-        favorites_added: isSevenDays ? 95 : 430,
-      },
-    },
-  };
-}
-
-function getFallbackTimeline(daysCount = 30) {
-  const list = [];
-  const now = new Date();
-  for (let i = daysCount - 1; i >= 0; i--) {
-    const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-    const dateStr = d.toISOString().split("T")[0];
-    const borrows = Math.floor(15 + Math.sin(i * 0.5) * 10 + Math.random() * 8);
-    const returns = Math.floor(12 + Math.cos(i * 0.4) * 8 + Math.random() * 6);
-    const requests = Math.floor(18 + Math.sin(i * 0.6) * 12 + Math.random() * 7);
-    const approved = Math.floor(requests * 0.82);
-    const rejected = requests - approved;
-
-    list.push({
-      date: dateStr,
-      borrows: Math.max(0, borrows),
-      returns: Math.max(0, returns),
-      requests: Math.max(0, requests),
-      approved_requests: Math.max(0, approved),
-      rejected_requests: Math.max(0, rejected),
-    });
-  }
-  return list;
-}
-
-function getFallbackRankings() {
-  return {
-    most_borrowed_books: [
-      {
-        book_id: 101,
-        title: "صحيح البخاري بشرح الكرماني",
-        library_id: 1,
-        library_name: "مكتبة الظاهرية الوطنية",
-        count: 142,
-      },
-      {
-        book_id: 102,
-        title: "تفسير القرطبي - الجامع لأحكام القرآن",
-        library_id: 2,
-        library_name: "مكتبة الأسد الوطنية",
-        count: 118,
-      },
-      {
-        book_id: 103,
-        title: "الموافقات في أصول الشريعة للشاطبي",
-        library_id: 3,
-        library_name: "دار الكتب الوطنية بحلب",
-        count: 96,
-      },
-      {
-        book_id: 104,
-        title: "رياض الصالحين من كلام سيد المرسلين",
-        library_id: 4,
-        library_name: "مكتبة حمص المركزية الوقفية",
-        count: 85,
-      },
-      {
-        book_id: 105,
-        title: "فتح الباري بشرح صحيح البخاري لابن حجر",
-        library_id: 1,
-        library_name: "مكتبة الظاهرية الوطنية",
-        count: 74,
-      },
-      {
-        book_id: 106,
-        title: "تاريخ دمشق لابن عساكر",
-        library_id: 2,
-        library_name: "مكتبة الأسد الوطنية",
-        count: 63,
-      },
-      {
-        book_id: 107,
-        title: "قواعد الأحكام في مصالح الأنام للعز بن عبد السلام",
-        library_id: 5,
-        library_name: "مكتبة حماة الوقفية",
-        count: 58,
-      },
-    ],
-    most_requested_books: [
-      {
-        book_id: 101,
-        title: "صحيح البخاري بشرح الكرماني",
-        library_id: 1,
-        library_name: "مكتبة الظاهرية الوطنية",
-        count: 165,
-      },
-      {
-        book_id: 108,
-        title: "إحياء علوم الدين للإمام الغزالي",
-        library_id: 2,
-        library_name: "مكتبة الأسد الوطنية",
-        count: 134,
-      },
-      {
-        book_id: 102,
-        title: "تفسير القرطبي - الجامع لأحكام القرآن",
-        library_id: 2,
-        library_name: "مكتبة الأسد الوطنية",
-        count: 122,
-      },
-      {
-        book_id: 103,
-        title: "الموافقات في أصول الشريعة للشاطبي",
-        library_id: 3,
-        library_name: "دار الكتب الوطنية بحلب",
-        count: 104,
-      },
-      {
-        book_id: 109,
-        title: "الجامع لأحكام الصنائع الوقفية",
-        library_id: 1,
-        library_name: "مكتبة الظاهرية الوطنية",
-        count: 91,
-      },
-    ],
-    most_favorited_books: [
-      {
-        book_id: 101,
-        title: "صحيح البخاري بشرح الكرماني",
-        library_id: 1,
-        library_name: "مكتبة الظاهرية الوطنية",
-        count: 420,
-      },
-      {
-        book_id: 102,
-        title: "تفسير القرطبي - الجامع لأحكام القرآن",
-        library_id: 2,
-        library_name: "مكتبة الأسد الوطنية",
-        count: 388,
-      },
-      {
-        book_id: 108,
-        title: "إحياء علوم الدين للإمام الغزالي",
-        library_id: 2,
-        library_name: "مكتبة الأسد الوطنية",
-        count: 345,
-      },
-      {
-        book_id: 104,
-        title: "رياض الصالحين من كلام سيد المرسلين",
-        library_id: 4,
-        library_name: "مكتبة حمص المركزية الوقفية",
-        count: 312,
-      },
-      {
-        book_id: 110,
-        title: "سير أعلام النبلاء للإمام الذهبي",
-        library_id: 3,
-        library_name: "دار الكتب الوطنية بحلب",
-        count: 290,
-      },
-    ],
-    favorites_window: "LIFETIME",
-    most_active_libraries: [
-      {
-        library_id: 1,
-        library_name: "مكتبة الظاهرية الوطنية",
-        governorate_id: 1,
-        governorate_name: "دمشق",
-        borrows_count: 480,
-      },
-      {
-        library_id: 2,
-        library_name: "مكتبة الأسد الوطنية",
-        governorate_id: 1,
-        governorate_name: "دمشق",
-        borrows_count: 410,
-      },
-      {
-        library_id: 3,
-        library_name: "دار الكتب الوطنية بحلب",
-        governorate_id: 2,
-        governorate_name: "حلب",
-        borrows_count: 350,
-      },
-      {
-        library_id: 4,
-        library_name: "مكتبة حمص المركزية الوقفية",
-        governorate_id: 3,
-        governorate_name: "حمص",
-        borrows_count: 280,
-      },
-      {
-        library_id: 5,
-        library_name: "مكتبة حماة الوقفية",
-        governorate_id: 4,
-        governorate_name: "حماة",
-        borrows_count: 210,
-      },
-    ],
-    most_active_governorates: [
-      {
-        governorate_id: 1,
-        governorate_name: "دمشق",
-        borrows_count: 890,
-      },
-      {
-        governorate_id: 2,
-        governorate_name: "حلب",
-        borrows_count: 620,
-      },
-      {
-        governorate_id: 3,
-        governorate_name: "حمص",
-        borrows_count: 450,
-      },
-      {
-        governorate_id: 4,
-        governorate_name: "حماة",
-        borrows_count: 380,
-      },
-      {
-        governorate_id: 5,
-        governorate_name: "اللاذقية",
-        borrows_count: 290,
-      },
-    ],
-  };
-}
-
-function getFallbackDistributions() {
-  return {
-    governorates: [
-      {
-        governorate_id: 1,
-        governorate_name: "دمشق",
-        libraries_count: 12,
-        readers_count: 4200,
-        books_count: 9800,
-        active_borrows_count: 1450,
-        period_borrows_count: 890,
-      },
-      {
-        governorate_id: 2,
-        governorate_name: "حلب",
-        libraries_count: 9,
-        readers_count: 3100,
-        books_count: 6500,
-        active_borrows_count: 980,
-        period_borrows_count: 620,
-      },
-      {
-        governorate_id: 3,
-        governorate_name: "حمص",
-        libraries_count: 6,
-        readers_count: 2200,
-        books_count: 4200,
-        active_borrows_count: 640,
-        period_borrows_count: 450,
-      },
-      {
-        governorate_id: 4,
-        governorate_name: "حماة",
-        libraries_count: 5,
-        readers_count: 1800,
-        books_count: 3400,
-        active_borrows_count: 490,
-        period_borrows_count: 380,
-      },
-      {
-        governorate_id: 5,
-        governorate_name: "اللاذقية",
-        libraries_count: 4,
-        readers_count: 1400,
-        books_count: 2800,
-        active_borrows_count: 390,
-        period_borrows_count: 290,
-      },
-      {
-        governorate_id: 6,
-        governorate_name: "طرطوس",
-        libraries_count: 3,
-        readers_count: 950,
-        books_count: 1900,
-        active_borrows_count: 270,
-        period_borrows_count: 195,
-      },
-      {
-        governorate_id: 7,
-        governorate_name: "درعا",
-        libraries_count: 3,
-        readers_count: 600,
-        books_count: 1290,
-        active_borrows_count: 120,
-        period_borrows_count: 105,
-      },
-    ],
-    libraries: [],
-  };
 }
 
 export const dashboardStatsService = {
@@ -453,13 +85,12 @@ export const dashboardStatsService = {
       if (err?.status === 403) {
         throw err; // Let Reader 403 trigger permission denied view
       }
-      // Return structured fallback if unauthenticated / offline
       return {
-        data: getFallbackOverview(filterOptions.period || "30d"),
-        meta: { requester_role: { code: "MINISTRY_ADMIN", label: "مسؤول الوزارة" } },
-        code: "DASHBOARD_OVERVIEW_FALLBACK",
-        message: "بيانات توضيحية للمنظومة",
-        isFallback: true,
+        data: null,
+        meta: null,
+        code: err?.code || "DASHBOARD_OVERVIEW_ERROR",
+        message: err?.message || "تعذر جلب بيانات الإحصائيات",
+        isFallback: false,
       };
     }
   },
@@ -485,13 +116,12 @@ export const dashboardStatsService = {
       };
     } catch (err) {
       if (err?.status === 403) throw err;
-      const days = filterOptions.period === "7d" ? 7 : 30;
       return {
-        data: getFallbackTimeline(days),
+        data: [],
         meta: null,
-        code: "DASHBOARD_TIMELINE_FALLBACK",
-        message: "بيانات توضيحية للخط الزمني",
-        isFallback: true,
+        code: err?.code || "DASHBOARD_TIMELINE_ERROR",
+        message: err?.message || "تعذر جلب الخط الزمني",
+        isFallback: false,
       };
     }
   },
@@ -519,11 +149,11 @@ export const dashboardStatsService = {
     } catch (err) {
       if (err?.status === 403) throw err;
       return {
-        data: getFallbackRankings(),
+        data: null,
         meta: null,
-        code: "DASHBOARD_RANKINGS_FALLBACK",
-        message: "بيانات توضيحية للوائح الصدارة",
-        isFallback: true,
+        code: err?.code || "DASHBOARD_RANKINGS_ERROR",
+        message: err?.message || "تعذر جلب لوائح الصدارة",
+        isFallback: false,
       };
     }
   },
@@ -550,11 +180,11 @@ export const dashboardStatsService = {
     } catch (err) {
       if (err?.status === 403) throw err;
       return {
-        data: getFallbackDistributions(),
+        data: null,
         meta: null,
-        code: "DASHBOARD_DISTRIBUTIONS_FALLBACK",
-        message: "بيانات توضيحية للتوزيع الجغرافي",
-        isFallback: true,
+        code: err?.code || "DASHBOARD_DISTRIBUTIONS_ERROR",
+        message: err?.message || "تعذر جلب التوزيع الجغرافي",
+        isFallback: false,
       };
     }
   },

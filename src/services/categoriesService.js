@@ -1,31 +1,63 @@
 import { apiClient } from "@/lib/apiClient";
-import { MOCK_CATEGORIES } from "@/data/mockCategories";
 
 /**
- * Service for Categories.
- * Supports:
- * 1. Public catalog showcase categories (rich objects with icon, slug, count, description)
- * 2. Authenticated Dashboard Category Management (/dashboard/category/)
+ * Normalizes backend category object into standard application model.
+ */
+export function transformBackendCategory(c) {
+  if (!c) return null;
+  return {
+    id: c.id,
+    name: c.name || "تصنيف غير مسمى",
+    slug: c.slug || c.name || String(c.id),
+    count: c.count ?? c.book_count ?? 0,
+    description:
+      c.description ||
+      `المؤلفات والكتب التخصصية والمصنفات التابعة لـ ${c.name}.`,
+    icon: c.icon || "BookOpenText",
+  };
+}
+
+/**
+ * Service for Categories connecting to live Backend APIs:
+ * 1. Public catalog showcase categories (GET /api/category/)
+ * 2. Authenticated Dashboard Category Management (GET/POST/PATCH/DELETE /dashboard/category/)
  */
 export const categoriesService = {
   /**
    * Public category list for Home showcase and Public Catalog Filters.
+   * Fetches real categories from /api/category/.
    * Always returns an Array for safe mapping in UI components.
    */
-  async getCategories(options) {
-    if (!options) {
-      return MOCK_CATEGORIES;
-    }
+  async getCategories(options = null) {
+    try {
+      const response = await apiClient.get("/api/category/");
+      let rawList = [];
 
-    // If options was passed (e.g., search filter for public list)
-    if (typeof options === "object" && options.search) {
-      const q = options.search.toLowerCase().trim();
-      return MOCK_CATEGORIES.filter((c) =>
-        c.name.toLowerCase().includes(q)
-      );
-    }
+      if (Array.isArray(response)) {
+        rawList = response;
+      } else if (Array.isArray(response?.data)) {
+        rawList = response.data;
+      } else if (Array.isArray(response?.data?.results)) {
+        rawList = response.data.results;
+      } else if (Array.isArray(response?.results)) {
+        rawList = response.results;
+      }
 
-    return MOCK_CATEGORIES;
+      let transformed = rawList.map(transformBackendCategory).filter(Boolean);
+
+      // Search filter if options.search is specified
+      if (options && typeof options === "object" && options.search) {
+        const q = options.search.toLowerCase().trim();
+        transformed = transformed.filter((c) =>
+          c.name.toLowerCase().includes(q)
+        );
+      }
+
+      return transformed;
+    } catch (err) {
+      console.warn("Public categories fetch failed:", err);
+      return [];
+    }
   },
 
   /**
@@ -62,39 +94,43 @@ export const categoriesService = {
         message: response?.message ?? "",
         code: response?.code ?? "",
       };
-    } catch {
-      // Fallback if offline or token not present
-      const filtered = search
-        ? MOCK_CATEGORIES.filter((c) =>
-            c.name.toLowerCase().includes(search.toLowerCase())
-          )
-        : MOCK_CATEGORIES;
-
+    } catch (err) {
+      console.error("Dashboard categories fetch error:", err);
       return {
-        count: filtered.length,
+        count: 0,
         next: null,
         previous: null,
-        results: filtered,
+        results: [],
         meta: null,
-        message: "",
-        code: "FALLBACK",
+        message: err?.message || "تعذر جلب التصنيفات",
+        code: err?.code || "ERROR",
       };
     }
   },
 
   /**
    * Retrieve single category by ID.
-   * GET /dashboard/category/{id}/
+   * GET /dashboard/category/{id}/ or /api/category/{id}/
    */
   async getCategoryById(id) {
     if (!id) throw new Error("معرّف التصنيف مطلوب.");
-    const response = await apiClient.get(`/dashboard/category/${id}/`);
-    return {
-      data: response?.data ?? null,
-      meta: response?.meta ?? null,
-      message: response?.message ?? "",
-      code: response?.code ?? "",
-    };
+    try {
+      const response = await apiClient.get(`/dashboard/category/${id}/`);
+      return {
+        data: response?.data ?? null,
+        meta: response?.meta ?? null,
+        message: response?.message ?? "",
+        code: response?.code ?? "",
+      };
+    } catch {
+      const response = await apiClient.get(`/api/category/${id}/`);
+      return {
+        data: response?.data || response || null,
+        meta: null,
+        message: "",
+        code: "SUCCESS",
+      };
+    }
   },
 
   /**
@@ -175,9 +211,18 @@ export const categoriesService = {
   },
 
   /**
-   * Compatibility method for public page lookup
+   * Method for category lookup by slug or name
    */
   async getCategoryBySlug(slug) {
-    return MOCK_CATEGORIES.find((c) => c.slug === slug) || null;
+    if (!slug) return null;
+    const categories = await this.getCategories();
+    return (
+      categories.find(
+        (c) =>
+          c.slug === slug ||
+          c.name === slug ||
+          String(c.id) === String(slug)
+      ) || null
+    );
   },
 };

@@ -3,7 +3,16 @@ const nextConfig = {
   reactStrictMode: true,
   skipTrailingSlashRedirect: true,
   images: {
-    domains: [],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "**",
+      },
+      {
+        protocol: "http",
+        hostname: "**",
+      },
+    ],
   },
   eslint: {
     ignoreDuringBuilds: true,
@@ -23,6 +32,14 @@ const nextConfig = {
       {
         source: "/accounts/:path*",
         destination: "https://library-management-system-piim.onrender.com/accounts/:path*",
+      },
+      {
+        source: "/api/:path*",
+        destination: "https://library-management-system-piim.onrender.com/api/:path*",
+      },
+      {
+        source: "/dashboard/:path*",
+        destination: "https://library-management-system-piim.onrender.com/dashboard/:path*",
       },
     ];
   },

@@ -70,26 +70,26 @@ export function BooksDiscoveryView({
     if (availParam !== null) setAvailableOnly(availParam === "true");
   }, [searchParams]);
 
-  // Load active libraries & categories when user is authenticated
+  // Load active libraries & categories
   useEffect(() => {
     let isMounted = true;
 
+    // Fetch live categories from public API
+    categoriesService
+      .getCategories()
+      .then((cats) => {
+        if (isMounted && Array.isArray(cats) && cats.length > 0) {
+          setCategories(cats);
+        }
+      })
+      .catch(() => {});
+
     if (isAuthenticated) {
-      // 1. Fetch reader's governorate libraries
+      // Fetch reader's governorate libraries
       librariesService
         .getLibraries({ pageSize: 50 })
         .then((res) => {
           if (isMounted) setLibraries(res.results || []);
-        })
-        .catch(() => {});
-
-      // 2. Fetch system categories from /dashboard/category/
-      categoriesService
-        .getDashboardCategories({ pageSize: 100 })
-        .then((res) => {
-          if (isMounted && res.results && res.results.length > 0) {
-            setCategories(res.results);
-          }
         })
         .catch(() => {});
     }

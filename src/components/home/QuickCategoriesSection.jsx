@@ -50,7 +50,7 @@ export function QuickCategoriesSection({ categories = [] }) {
             return (
               <Link
                 key={cat.id}
-                href={`/books?category=${cat.slug}`}
+                href={`/books?category=${encodeURIComponent(cat.name || cat.slug)}`}
                 className="group relative flex flex-col p-5 rounded-xl border border-border bg-background hover:bg-surface hover:border-primary/40 hover:shadow-card-hover transition-all duration-300"
               >
                 <div className="flex items-center justify-between mb-3">
@@ -58,7 +58,7 @@ export function QuickCategoriesSection({ categories = [] }) {
                     <Icon className="w-5 h-5" />
                   </div>
                   <span className="text-xs font-semibold text-foreground-subtle bg-surface-muted px-2 py-0.5 rounded-full border border-border-subtle">
-                    {formatArabicNumber(cat.count)} مصنف
+                    {cat.count > 0 ? `${formatArabicNumber(cat.count)} مصنف` : "مصنفات معتمدة"}
                   </span>
                 </div>
 

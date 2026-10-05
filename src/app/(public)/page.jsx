@@ -9,16 +9,35 @@ import { CtaSection } from "@/home/CtaSection";
 import { booksService } from "@/services/booksService";
 import { categoriesService } from "@/services/categoriesService";
 
-export const revalidate = 3600; // Static revalidation ready for production
+export const revalidate = 60; // Dynamic revalidation with live API data
 
 export default async function HomePage() {
-  const [categories, featuredBooks, recentBooks, popularBooks] =
+  const [categories, featuredBooks, recentBooks, popularBooks, booksData] =
     await Promise.all([
       categoriesService.getCategories(),
       booksService.getFeaturedBooks(4),
       booksService.getRecentBooks(4),
       booksService.getPopularBooks(4),
+      booksService.getBooks({ pageSize: 1 }),
     ]);
+
+  const totalBooks = booksData?.count ?? featuredBooks.length;
+  const totalCategories = categories?.length ?? 0;
+  const totalCopies = (featuredBooks || []).reduce(
+    (acc, b) => acc + (b.total_copies || 1),
+    0
+  );
+  const totalBorrowed = (featuredBooks || []).reduce(
+    (acc, b) => acc + (b.count_borrowed || 0),
+    0
+  );
+
+  const stats = {
+    totalBooks,
+    totalCategories,
+    totalCopies: totalCopies > 0 ? totalCopies : totalBooks,
+    totalBorrowed,
+  };
 
   return (
     <div className="w-full space-y-0">
@@ -26,7 +45,7 @@ export default async function HomePage() {
       <QuickCategoriesSection categories={categories} />
       <FeaturedBooksSection books={featuredBooks} />
       <RecentBooksSection books={recentBooks} />
-      <LibraryStatsSection />
+      <LibraryStatsSection stats={stats} />
       <PopularBooksSection books={popularBooks} />
       <CtaSection />
     </div>

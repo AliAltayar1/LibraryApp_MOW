@@ -13,10 +13,12 @@ export function cn(...inputs) {
  */
 export function formatArabicNumber(number) {
   if (number === undefined || number === null) return "";
-  return new Intl.NumberFormat("ar-SY").format(number);
+  // return new Intl.NumberFormat("ar-SY").format(number);
+  return number;
 }
 
 /**
+ *
  * Truncates text cleanly with ellipsis
  */
 export function truncateText(text, maxLength = 100) {
